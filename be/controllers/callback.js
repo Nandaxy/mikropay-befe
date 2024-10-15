@@ -1,27 +1,27 @@
 const express = require("express");
 const router = express.Router();
 const Transaction = require("../models/Transaction");
-const Setting = require("../models/Setting");
+const PaymentGateway = require("../models/paymentGateway");
 const Router = require("../models/Router");
 const { default: axios } = require("axios");
 const crypto = require("crypto");
 
 router.post("/callback", async (req, res) => {
     const json = req.body;
-    // console.log(json);
+    console.log(json);
 
-    const userSetting = await Setting.findOne();
-    if (!userSetting) {
+    const PaymentGateways = await PaymentGateway.findOne({ code: "tripay" });
+    if (!PaymentGateways) {
         return res
             .status(500)
             .json({ success: false, message: "Settings not found" });
     }
 
     const tripay = {
-        endpoint: userSetting.endpoint,
-        apiKey: userSetting.apiKey,
-        privateKey: userSetting.privateKey,
-        merchantCode: userSetting.merchantCode
+        endpoint: PaymentGateways.endpoint,
+        apiKey: PaymentGateways.apiKey,
+        privateKey: PaymentGateways.privateKey,
+        merchantCode: PaymentGateways.merchantCode
     };
 
     const signature = crypto
@@ -49,7 +49,7 @@ router.post("/callback", async (req, res) => {
         }
 
         if (json.is_closed_payment === 1 && status === "PAID") {
-            const routerId = userSetting.router;
+            const routerId = transaction.router;
             const router = await Router.findById(routerId);
             if (!router) {
                 return res
@@ -71,7 +71,8 @@ router.post("/callback", async (req, res) => {
                 profile: transaction.profile,
                 name: transaction.merchant_ref,
                 password: transaction.merchant_ref,
-                comment: "vc-tripay"
+                comment: "vc-tripay",
+                "limit-uptime": transaction.vc_exp
             };
             // console.log(userParams);
 
@@ -82,7 +83,7 @@ router.post("/callback", async (req, res) => {
                         "Content-Type": "application/json"
                     }
                 });
-                console.log("User added response:", response.data);
+                // console.log("User added response:", response.data);
 
                 transaction.status = "PAID";
                 await transaction.save();

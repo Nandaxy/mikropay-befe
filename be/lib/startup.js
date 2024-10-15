@@ -1,11 +1,25 @@
+const dotenv = require("dotenv");
 const User = require("../models/User");
 const PaymentGateway = require("../models/paymentGateway");
 
+dotenv.config();
+
+function generateRandomName(length = 3) {
+    const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    let randomName = "";
+    for (let i = 0; i < length; i++) {
+        randomName += characters.charAt(
+            Math.floor(Math.random() * characters.length)
+        );
+    }
+    return randomName;
+}
+
 const createAdminUser = async () => {
     try {
-        const adminUsername = "nanda";
-        const adminEmail = "nanda@example.com";
-        const adminPassword = "nanda";
+        const adminUsername = process.env.ADMIN_USERNAME;
+        const adminEmail = `mikrotik-${generateRandomName()}@mikropay.com`;
+        const adminPassword = process.env.ADMIN_PASSWORD;
         const adminRole = "admin";
 
         const existingAdmin = await User.findOne({ username: adminUsername });
@@ -31,17 +45,17 @@ const createAdminUser = async () => {
 const createPaymentGateway = async () => {
     try {
         const paymentGatewayCode = "tripay";
-     
 
-        const existingPaymentGateway = await PaymentGateway.findOne({ code: paymentGatewayCode });
+        const existingPaymentGateway = await PaymentGateway.findOne({
+            code: paymentGatewayCode
+        });
         if (existingPaymentGateway) {
             console.log("Payment gateway already exists");
             return;
-        } 
+        }
 
         const paymentGateway = new PaymentGateway({
-            code: paymentGatewayCode,
-           
+            code: paymentGatewayCode
         });
 
         await paymentGateway.save();
@@ -49,8 +63,7 @@ const createPaymentGateway = async () => {
     } catch (error) {
         console.error("Error creating payment gateway:", error);
     }
-}
-
+};
 
 module.exports = {
     createAdminUser,

@@ -24,7 +24,7 @@ const authenticateToken = (req, res, next) => {
                 .status(403)
                 .json(createResponse(403, "Invalid token", req.path, "forbidden"));
         }
-        req.user = user; // Save user information in request for use in other routes
+        req.user = user; 
         next();
     });
 };

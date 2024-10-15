@@ -1,5 +1,5 @@
 /* eslint-disable react/prop-types */
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { getAction } from "../../../lib/action";
 import {
     Table,
@@ -20,24 +20,22 @@ import {
     DialogTrigger
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Link } from "react-router-dom";
 import { postAction } from "../../../lib/action";
-import EditRouterForm from "@/components/admin/routers/EditRouterForm";
-import RouterStatus from "./RouterStatus";
+import EditHotspotProfileForm from "./EditHotspotProfileForm";
 
-const TabelListRouter = ({ refreshData }) => {
-    const [isDialogOpen, setDialogOpen] = useState(false);
-    const [isEditDialogOpen, setEditDialogOpen] = useState(false);
+const TabelListHotspotProfiles = ({ refreshData }) => {
     const { toast } = useToast();
-    const [router, setRouter] = useState([]);
-    const [currentRouter, setCurrentRouter] = useState(null);
+    const [profiles, setProfiles] = useState([]);
+    const [isEditDialogOpen, setEditDialogOpen] = useState(false);
+    const [currentProfile, setCurrentProfile] = useState(null);
+    const [isDialogOpen, setDialogOpen] = useState(false);
 
     const fetchData = async () => {
         try {
             const response = await getAction({
-                endpoint: "api/admin/routes/list"
+                endpoint: "api/admin/hotspot/profile/list"
             });
-            setRouter(response.data);
+            setProfiles(response.data);
         } catch (error) {
             console.error(error);
         }
@@ -47,48 +45,44 @@ const TabelListRouter = ({ refreshData }) => {
         fetchData();
     }, [refreshData]);
 
-    const handleDelete = async routerId => {
+    const handleDelete = async profileId => {
         try {
             const del = await postAction({
-                endpoint: "api/admin/routes/delete",
-                data: {
-                    routerId
-                }
+                endpoint: "api/admin/hotspot/profile/delete",
+                data: { profileId }
             });
 
+            console.log(del.data);
+
             if (del.data.status === 200) {
-                setRouter(prevRouter =>
-                    prevRouter.filter(r => r._id !== routerId)
+                setProfiles(prevProfiles =>
+                    prevProfiles.filter(p => p._id !== profileId)
                 );
                 toast({
-                    description: "Router Berhasil Dihapus.",
+                    description: "Profile Hotspot Berhasil Dihapus.",
                     className: "font-bold bg-green-400"
                 });
                 handleDialogClose();
-
-                fetchData();
             } else {
                 toast({
                     variant: "destructive",
-                    description: "Router Gagal Dihapus."
+                    description: "Profile Hotspot Gagal Dihapus."
                 });
             }
         } catch (error) {
-            console.error(error);
             toast({
                 variant: "destructive",
-                description: "Router Gagal Dihapus."
+                description: "Profile Hotspot Gagal Dihapus."
             });
         }
     };
 
-    const handleEdit = router => {
-        setCurrentRouter(router);
+    const handleEdit = profile => {
+        setCurrentProfile(profile);
         setEditDialogOpen(true);
     };
 
     const handleDialogClose = () => {
-        setDialogOpen(false);
         setEditDialogOpen(false);
     };
 
@@ -96,38 +90,36 @@ const TabelListRouter = ({ refreshData }) => {
         <>
             <Table className="overflow-x-auto">
                 <TableHeader>
-                    <TableRow>
+                    <TableRow className="whitespace-nowrap">
                         <TableHead className="w-10">No</TableHead>
-                        <TableHead className="whitespace-nowrap">
-                            Nama Router
-                        </TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Ip Address</TableHead>
-                        <TableHead>Port</TableHead>
-
+                        <TableHead className="w-10">Nama</TableHead>
+                        <TableHead>Profile</TableHead>
+                        <TableHead>Router</TableHead>
+                        <TableHead>Expired</TableHead>
+                        <TableHead>Shared Users</TableHead>
+                        <TableHead>Rate Limit</TableHead>
+                        <TableHead>Harga</TableHead>
                         <TableHead className="text-center">Action</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {router.map((routers, index) => (
-                        <TableRow key={routers._id}>
+                    {profiles.map((profile, index) => (
+                        <TableRow key={profile._id}>
                             <TableCell>{index + 1}</TableCell>
-                            <TableCell className="font-medium underline text-blue-500">
-                                <Link to={`/router/${routers._id}`}>
-                                    {routers.name}
-                                </Link>
+                            <TableCell>{profile.name}</TableCell>
+                            <TableCell>{profile.profile}</TableCell>
+                            <TableCell className="whitespace-nowrap">
+                                {profile.router.name}
                             </TableCell>
-                            <TableCell>
-                                <RouterStatus router={routers} />
-                            </TableCell>
-                            <TableCell>{routers.ip}</TableCell>
-                            <TableCell>{routers.port}</TableCell>
-
+                            <TableCell>{profile.sessionTimeout}</TableCell>
+                            <TableCell>{profile.sharedUsers}</TableCell>
+                            <TableCell>{profile.rateLimit}</TableCell>
+                            <TableCell>{profile.price}</TableCell>
                             <TableCell>
                                 <div className="flex items-center space-x-4 justify-center">
                                     <Button
                                         variant="outline"
-                                        onClick={() => handleEdit(routers)}
+                                        onClick={() => handleEdit(profile)}
                                     >
                                         Edit
                                     </Button>
@@ -147,11 +139,11 @@ const TabelListRouter = ({ refreshData }) => {
                                         <DialogContent className="flex flex-col justify-center items-center md:w-fit">
                                             <DialogHeader>
                                                 <DialogTitle>
-                                                    Hapus Router
+                                                    Hapus Profile
                                                 </DialogTitle>
                                                 <DialogDescription>
                                                     Apakah Anda Yakin Menghapus
-                                                    Roter Ini?
+                                                    Profile Ini?
                                                 </DialogDescription>
                                             </DialogHeader>
                                             <div className="flex w-full space-x-4 justify-center md:justify-end">
@@ -164,7 +156,7 @@ const TabelListRouter = ({ refreshData }) => {
                                                     variant="destructive"
                                                     onClick={() =>
                                                         handleDelete(
-                                                            routers._id
+                                                            profile._id
                                                         )
                                                     }
                                                 >
@@ -179,14 +171,15 @@ const TabelListRouter = ({ refreshData }) => {
                     ))}
                 </TableBody>
             </Table>
+
             <Dialog open={isEditDialogOpen} onOpenChange={handleDialogClose}>
                 <DialogContent className="sm:max-w-[425px]">
                     <DialogHeader>
-                        <DialogTitle>Edit Router</DialogTitle>
+                        <DialogTitle>Edit Profile Hotspot</DialogTitle>
                     </DialogHeader>
-                    {currentRouter && (
-                        <EditRouterForm
-                            routerData={currentRouter}
+                    {currentProfile && (
+                        <EditHotspotProfileForm
+                            profileData={currentProfile}
                             onSuccess={handleDialogClose}
                             onRefresh={fetchData}
                         />
@@ -197,4 +190,4 @@ const TabelListRouter = ({ refreshData }) => {
     );
 };
 
-export default TabelListRouter;
+export default TabelListHotspotProfiles;

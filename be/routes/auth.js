@@ -20,38 +20,19 @@ router.post("/login", async (req, res) => {
     const { username, password } = req.body;
     const path = "/login";
 
-    if (
-        !username ||
-        typeof username !== "string" ||
-        username.length < 3 ||
-        username.length > 20
-    ) {
-        return res
-            .status(400)
-            .json(
-                createResponse(
-                    400,
-                    "Invalid username",
-                    path,
-                    "validation_error"
-                )
-            );
+    if (!username || typeof username !== "string") {
+        return res.json(
+            createResponse(400, "Invalid username", path, "validation_error")
+        );
     }
 
     try {
         const user = await User.findOne({ username });
 
         if (!user) {
-            return res
-                .status(401)
-                .json(
-                    createResponse(
-                        401,
-                        "Invalid credentials",
-                        path,
-                        "unauthorized"
-                    )
-                );
+            return res.json(
+                createResponse(401, "Invalid credentials", path, "unauthorized")
+            );
         }
 
         const isMatch = await user.matchPassword(password);
@@ -59,7 +40,6 @@ router.post("/login", async (req, res) => {
         if (!isMatch) {
             console.log("Password does not match");
             return res
-                .status(401)
                 .json(
                     createResponse(
                         401,
@@ -73,7 +53,7 @@ router.post("/login", async (req, res) => {
         const accessToken = jwt.sign(
             { userId: user._id, username: user.username, role: user.role },
             process.env.ACCESS_TOKEN_SECRET,
-            { expiresIn: "30m" }
+            { expiresIn: "15m" }
         );
         const refreshToken = jwt.sign(
             { userId: user._id },
@@ -95,38 +75,64 @@ router.post("/login", async (req, res) => {
     }
 });
 
-router.post("/token", (req, res) => {
+router.post("/token", async (req, res) => {
     const { token } = req.body;
     const path = "/token";
 
-    console.log("token refresh", token);
-
-    if (!token)
+    if (!token) {
         return res
             .status(401)
             .json(
                 createResponse(401, "No token provided", path, "unauthorized")
             );
+    }
 
-    jwt.verify(token, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
-        if (err)
-            return res
-                .status(403)
-                .json(createResponse(403, "Invalid token", path, "forbidden"));
+    jwt.verify(
+        token,
+        process.env.REFRESH_TOKEN_SECRET,
+        async (err, decoded) => {
+            if (err) {
+                return res
+                    .status(403)
+                    .json(
+                        createResponse(403, "Invalid token", path, "forbidden")
+                    );
+            }
 
-        const accessToken = jwt.sign(
-            { userId: user.userId, username: user.username, role: user.role },
-            process.env.ACCESS_TOKEN_SECRET,
-            { expiresIn: "15m" }
-        );
-        console.log("accessToken", accessToken);
+            try {
+                const user = await User.findById(decoded.userId);
 
-        res.json(
-            createResponse(200, "Token refreshed", path, "success", {
-                accessToken
-            })
-        );
-    });
+                if (!user) {
+                    return res
+                        .status(404)
+                        .json(
+                            createResponse(404, "User not found", path, "error")
+                        );
+                }
+
+                const accessToken = jwt.sign(
+                    {
+                        userId: user._id,
+                        username: user.username,
+                        role: user.role
+                    },
+                    process.env.ACCESS_TOKEN_SECRET,
+                    { expiresIn: "15m" }
+                );
+
+                res.json(
+                    createResponse(200, "Token refreshed", path, "success", {
+                        accessToken
+                    })
+                );
+            } catch (error) {
+                console.error("Error refreshing token:", error);
+                res.status(500).json(
+                    createResponse(500, "Server error", path, "error")
+                );
+            }
+        }
+    );
 });
 
 router.post("/verify-token", (req, res) => {
@@ -157,9 +163,7 @@ router.post("/verify-token", (req, res) => {
             }
             return res
                 .status(403)
-                .json(
-                    createResponse(403, "Invalid token", path, "forbidden")
-                );
+                .json(createResponse(403, "Invalid token", path, "forbidden"));
         }
 
         res.json(
@@ -167,7 +171,5 @@ router.post("/verify-token", (req, res) => {
         );
     });
 });
-
-
 
 module.exports = router;

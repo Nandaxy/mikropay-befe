@@ -7,6 +7,12 @@ const routerSchema = new mongoose.Schema({
     username: { type: String, required: true },
     password: { type: String },
     dnsMikrotik: { type: String },
+    slug: { type: String },
+    isPaymentGatewayActive: { type: Boolean, default: false },
+    paymentGateway: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "PaymentGateway"
+    },
     createdAt: {
         type: Date,
         default: Date.now

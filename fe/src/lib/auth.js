@@ -49,5 +49,8 @@ API.interceptors.response.use(
 );
 
 // export const register = data => API.post("/register", data);
-export const login = data => API.post("/login", data);
+export const login = data => {
+    const proccessLogin = API.post("/login", data);
+    return proccessLogin;
+};
 export const refreshToken = data => API.post("/token", data);

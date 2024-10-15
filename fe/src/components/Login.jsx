@@ -8,15 +8,22 @@ const Login = ({ setAccessToken }) => {
     const [error, setError] = useState("");
     const navigate = useNavigate();
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async e => {
         e.preventDefault();
         setError(""); // Clear any previous errors
         try {
             const { data } = await login({ username, password });
-            localStorage.setItem("accessToken", data.accessToken);
-            localStorage.setItem("refreshToken", data.refreshToken);
-            setAccessToken(data.accessToken);
-            navigate("/dashboard");
+
+            console.log(data);
+
+            if (data.status === 200) {
+                localStorage.setItem("accessToken", data.accessToken);
+                localStorage.setItem("refreshToken", data.refreshToken);
+                setAccessToken(data.accessToken);
+                navigate("/#/dashboard");
+            } else {
+                setError("Invalid username or password. Please try again.");
+            }
         } catch (error) {
             setError("Invalid username or password. Please try again.");
             console.error(error);
@@ -26,9 +33,13 @@ const Login = ({ setAccessToken }) => {
     return (
         <div className="flex min-h-screen items-center justify-center bg-gray-100">
             <div className="w-full max-w-md p-8 space-y-6 bg-white shadow-md rounded-lg">
-                <h2 className="text-center text-2xl font-bold text-gray-700">Login</h2>
+                <h2 className="text-center text-2xl font-bold text-gray-700">
+                    Login
+                </h2>
                 {error && (
-                    <div className="text-red-500 text-sm text-center">{error}</div>
+                    <div className="text-red-500 text-sm text-center">
+                        {error}
+                    </div>
                 )}
                 <form className="space-y-6" onSubmit={handleSubmit}>
                     <div>
@@ -44,7 +55,7 @@ const Login = ({ setAccessToken }) => {
                             type="text"
                             required
                             value={username}
-                            onChange={(e) => setUsername(e.target.value)}
+                            onChange={e => setUsername(e.target.value)}
                             className="w-full p-3 mt-1 border rounded-md focus:outline-none focus:ring focus:border-blue-300"
                         />
                     </div>
@@ -61,7 +72,7 @@ const Login = ({ setAccessToken }) => {
                             type="password"
                             required
                             value={password}
-                            onChange={(e) => setPassword(e.target.value)}
+                            onChange={e => setPassword(e.target.value)}
                             className="w-full p-3 mt-1 border rounded-md focus:outline-none focus:ring focus:border-blue-300"
                         />
                     </div>
@@ -72,7 +83,6 @@ const Login = ({ setAccessToken }) => {
                         Sign In
                     </button>
                 </form>
-
             </div>
         </div>
     );
